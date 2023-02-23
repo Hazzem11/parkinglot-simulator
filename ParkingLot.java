@@ -33,7 +33,7 @@ public class ParkingLot {
 
 	/**
 	 * Constructs a parking lot by loading a file
-	 * 
+	 *
 	 * @param strFilename is the name of the file
 	 */
 	public ParkingLot(String strFilename) throws Exception {
@@ -47,8 +47,9 @@ public class ParkingLot {
 		calculateLotDimensions(strFilename);
 
 		lotDesign = new CarType[numRows][numSpotsPerRow];
-		populateFromFile(strFilename);
-		
+		occupancy = new Spot[numRows][numSpotsPerRow];
+		populateDesignFromFile(strFilename);
+
 	}
 
 	public int getNumRows() {
@@ -61,24 +62,21 @@ public class ParkingLot {
 
 	/**
 	 * Parks a car (c) at a give location (i, j) within the parking lot.
-	 * 
+	 *
 	 * @param i         is the parking row index
 	 * @param j         is the index of the spot within row i
 	 * @param c         is the car to be parked
 	 * @param timestamp is the (simulated) time when the car gets parked in the lot
 	 */
 	public void park(int i, int j, Car c, int timestamp) {
-		if (!canParkAt(i, j, c)) {
-			System.out.println("Car " + c + " cannot be parked at (" + i + "," + j + ")");
-			return;
-		}
-		occupancy[i][j] = c;	
+		Spot spot = new Spot(c, timestamp);
+		occupancy[i][j] = spot;
 
 	}
 
 	/**
 	 * Removes the car parked at a given location (i, j) in the parking lot
-	 * 
+	 *
 	 * @param i is the parking row index
 	 * @param j is the index of the spot within row i
 	 * @return the spot removed; the method returns null when either i or j are out
@@ -100,14 +98,13 @@ public class ParkingLot {
 
 	/**
 	 * Returns the spot instance at a given position (i, j)
-	 * 
+	 *
 	 * @param i is the parking row index
 	 * @param j is the index of the spot within row i
 	 * @return the spot instance at position (i, j)
 	 */
 	public Spot getSpotAt(int i, int j) {
-		Spot temp = occupancy[i][j];
-		return temp;			
+		return occupancy[i][j];
 	}
 
 	/**
@@ -115,7 +112,7 @@ public class ParkingLot {
 	 * location (i, j)
 	 *
 	 * NOTE: This method is complete; you do not need to change it.
-	 * 
+	 *
 	 * @param i is the parking row index
 	 * @param j is the index of the spot within row i
 	 * @return true if car c can park at (i, j) and false otherwise
@@ -155,16 +152,16 @@ public class ParkingLot {
 	 * is parked at that spot with the indicated timestamp and the method returns "true".
 	 * If no suitable spot is found, no parking action is taken and the method simply returns
 	 * "false"
-	 * 
+	 *
 	 * @param c is the car to be parked
-	 * @param timestamp is the simulation time at which parking is attempted for car c 
+	 * @param timestamp is the simulation time at which parking is attempted for car c
 	 * @return true if c is successfully parked somwhere in the lot, and false otherwise
 	 */
 	public boolean attemptParking(Car c, int timestamp) {
 		for (int i=0; i<occupancy.length; i++){
 			for (int j=0; j<occupancy[i].length;j++){
 				if (canParkAt(i, j, c)){
-					if (occupancy[i][j].getTimestamp()==0){
+					if(getSpotAt(i, j) == null){
 						return true;
 					}
 				}
@@ -173,9 +170,9 @@ public class ParkingLot {
 		}
 		return false;
 	}
-		
-		
-	
+
+
+
 
 	/**
 	 * @return the total capacity of the parking lot excluding spots that cannot be
@@ -190,7 +187,7 @@ public class ParkingLot {
 					count++;
 
 		return count;
-	
+
 	}
 
 	/**
@@ -216,9 +213,8 @@ public class ParkingLot {
 
 			if (str.isEmpty()) {
 				// Do nothing
-			} else if (str.equals(SECTIONER)) {
-				break;
-			} else {
+			}
+			else {
 				numRows++;
 				String[] tokens = str.split(SEPARATOR);
 				numSpotsPerRow = Integer.max(tokens.length, numSpotsPerRow);
@@ -244,7 +240,7 @@ public class ParkingLot {
 
 			if (str.isEmpty()) {
 				// Do nothing
-			} 
+			}
 			else {
 				String[] tokens = str.split(",");
 				for (int i = 0; i < tokens.length; i++)
@@ -254,7 +250,7 @@ public class ParkingLot {
 		}
 
 		rowNumber = 0;
-		
+
 	}
 
 	/**
