@@ -82,75 +82,88 @@ public class Simulator {
 	 * In this method, you will implement the algorithm shown in Figure 3 of the A2 description.
 	 */
 	public void simulate() {
-	
-		// Local variables can be defined here.
 
-		this.clock = 0;
-		// Note that for the specific purposes of A2, clock could have been 
+		// Local variables can be defined here.
+		Spot firstQueue = null;
+		Spot temp = null;
+		int duration = 0;
+		Spot exited = null;
+		boolean firtpass;
+		incomingQueue = new LinkedQueue<>();
+		outgoingQueue = new LinkedQueue<>();
+
+		this.clock = 300;
+		// Note that for the specific purposes of A2, clock could have been
 		// defined as a local variable too.
 
 		while (clock < steps) {
-			if (RandomGenerator.eventOccurred(probabilityOfArrivalPerSec)){
+			if (RandomGenerator.eventOccurred(probabilityOfArrivalPerSec)) {
 				Car c = RandomGenerator.generateRandomCar();
 				Spot cSpot = new Spot(c, clock);
-				LinkedQueue incomingQueue = new LinkedQueue<>();
-				LinkedQueue outgoingQueue = new LinkedQueue<>();
 				incomingQueue.enqueue(cSpot);
 			}
-			for (int k=0; k<lot.getNumRows(); k++){
-				for (int s = 0; s<lot.getNumSpotsPerRow();s++){
-					Spot temp = lot.getSpotAt(k, s); 
-					int duration = clock - temp.getTimestamp();
-					if (duration == MAX_PARKING_DURATION){
-						lot.remove(k,s);
-						outgoingQueue.enqueue(temp);
-					}
-					else{
-						if (RandomGenerator.eventOccurred(departurePDF.pdf(duration))){
-							lot.remove(k,s);
+			for (int k = 0; k < lot.getNumRows(); k++) {
+				for (int s = 0; s < lot.getNumSpotsPerRow(); s++) {
+					if (lot.getSpotAt(k, s) == null) {
+						// Do nothing
+					} else {
+						temp = lot.getSpotAt(k, s);
+						duration = clock - temp.getTimestamp();
+						if (duration == MAX_PARKING_DURATION) {
+							lot.remove(k, s);
 							outgoingQueue.enqueue(temp);
+						} else {
+							if (RandomGenerator.eventOccurred(departurePDF.pdf(duration))) {
+								outgoingQueue.enqueue(temp);
 
+							}
 						}
-
 					}
 				}
-				
+
 			}
-			if (incomingQueue == null){
+
+			if (incomingQueue == null) {
 				// Do nothing
-			}
-			else if (!incomingQueue.isEmpty()){
+			} else if (!incomingQueue.isEmpty()) {
 				boolean parked = false;
-				for (int x=0 ; x<lot.getNumRows(); x++ ){
-					if (parked){
+				if(firstQueue == null) {
+					firstQueue = incomingQueue.dequeue();
+				}
+				for (int x = 0;x < lot.getNumRows(); x++) {
+					if (parked) {
 						break;
 					}
-					for (int y=0 ;y<lot.getNumSpotsPerRow();y++ ){
-						Car ctemp = incomingQueue.dequeue().getCar();
-						int ctimestamp = incomingQueue.dequeue().getTimestamp();
-						if (lot.attemptParking(ctemp, ctimestamp)){
-							lot.park(x,y,ctemp,ctimestamp);
-							incomingQueue.dequeue();
+					for (int y = 0; y < lot.getNumSpotsPerRow(); y++) {
+						if (lot.attemptParking(firstQueue.getCar(), firstQueue.getTimestamp())) {
+							lot.park(x, y, firstQueue.getCar(), firstQueue.getTimestamp());
 							parked = true;
+							System.out.println(firstQueue.getCar() + " ENTERED at timestep " + clock + "; occupancy is at " +
+									lot.getTotalOccupancy()
+							);
+							firstQueue = null;
+							if(!incomingQueue.isEmpty()) {
+								incomingQueue.dequeue();
+							}
 							break;
-							
 						}
-							
-						}
-
 					}
 				}
-			
-			if (outgoingQueue == null){
-				// Do nothing
 			}
-			else if (!outgoingQueue.isEmpty()){ 
-				outgoingQueue.dequeue();
-			}
-			clock++;
+
+				if (outgoingQueue == null) {
+					// Do nothing
+				} else if (!outgoingQueue.isEmpty()) {
+					exited = outgoingQueue.dequeue();
+					System.out.println(exited + " EXITED at timestep " + clock + "; occupancy is at " +
+							lot.getTotalOccupancy()
+					);
+				}
+				clock++;
+
 		}
 	}
-	
+
 
 	/**
 	 * <b>main</b> of the application. The method first reads from the standard
@@ -158,7 +171,7 @@ public class Simulator {
 	 * for a number of steps (this number is specified by the steps parameter). At
 	 * the end, the method prints to the standard output information about the
 	 * instance of the ParkingLot just created.
-	 * 
+	 *
 	 * @param args command lines parameters (not used in the body of the method)
 	 * @throws Exception
 	 */
@@ -166,23 +179,24 @@ public class Simulator {
 	public static void main(String args[]) throws Exception {
 
 		StudentInfo.display();
-		
-		if (args.length < 2) {
-			System.out.println("Usage: java Simulator <lot-design filename> <hourly rate of arrival>");
-			System.out.println("Example: java Simulator parking.inf 11");
-			return;
-		}
 
-		if (!args[1].matches("\\d+")) {
-			System.out.println("The hourly rate of arrival should be a positive integer!");
-			return;
-		}
+//		if (args.length < 2) {
+//			System.out.println("Usage: java Simulator <lot-design filename> <hourly rate of arrival>");
+//			System.out.println("Example: java Simulator parking.inf 11");
+//			return;
+//		}
+//
+//
+//		if (!args[1].matches("\\d+")) {
+//			System.out.println("The hourly rate of arrival should be a positive integer!");
+//			return;
+//		}
 
-		ParkingLot lot = new ParkingLot(args[0]);
+		ParkingLot lot = new ParkingLot("parking.inf");
 
 		System.out.println("Total number of parkable spots (capacity): " + lot.getTotalCapacity());
 
-		Simulator sim = new Simulator(lot, Integer.parseInt(args[1]), SIMULATION_DURATION);
+		Simulator sim = new Simulator(lot, Integer.parseInt("11"), SIMULATION_DURATION);
 
 		long start, end;
 
@@ -202,7 +216,7 @@ public class Simulator {
 
 		// The Queue interface does not provide a method to get the size of the queue.
 		// We thus have to dequeue all the elements to count how many elements the queue has!
-		
+
 		while (!sim.incomingQueue.isEmpty()) {
 			sim.incomingQueue.dequeue();
 			count++;
